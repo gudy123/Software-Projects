@@ -1,0 +1,1 @@
+使用codeblocks直接打开文件夹中的open_me.project文件，运行main方法，可以得到结果在本文件夹中
