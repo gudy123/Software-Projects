@@ -4,9 +4,7 @@
 using namespace std;
 #include "./gdal/gdal_priv.h"
 #pragma comment(lib, "gdal_i.lib")
-void dividedByBlock(int tx,int ty,int imgXlen,GDALDataset* mulPic,GDALDataset* panPic,GDALDataset* outPic,float* buffR,float* buffG,float* buffB,float* buffP,float* buffH,float* buffS){
-    char* outPath = "Out_large.tif";
-    outPic = GetGDALDriverManager()->GetDriverByName("GTiff")->Create(outPath,imgXlen,imgYlen,bandNum,GDT_Byte,NULL);
+void dividedByBlock(int tx,int ty,int imgXlen,int imgYlen,GDALDataset* mulPic,GDALDataset* panPic,GDALDataset* outPic,float* buffR,float* buffG,float* buffB,float* buffP,float* buffH,float* buffS){
     //分块处理转换
 	for(int i = 0;i < imgXlen;i+=256){
         for(int j = 0 ; j < imgYlen;j+=256){
@@ -36,16 +34,12 @@ void dividedByBlock(int tx,int ty,int imgXlen,GDALDataset* mulPic,GDALDataset* p
 }
 //分行处理
 void dividedByLine(int tx,int ty,int imgXlen, GDALDataset* mulPic,GDALDataset* panPic,GDALDataset* outPic,float* buffR,float* buffG,float* buffB,float* buffP,float* buffH,float* buffS){
-    char* outPath = "Out_large2.tif";
-    outPic = GetGDALDriverManager()->GetDriverByName("GTiff")->Create(outPath,imgXlen,imgYlen,bandNum,GDT_Byte,NULL);
 
     //分行处理  256行一组
     for(int i = 0 ; i < imgXlen;i+=256){
         printf("图像的x:%d  y:%d\n",i,0);
         if(i + tx > imgXlen)
             break;
-
-
         //读入缓存
         mulPic->GetRasterBand(1)->RasterIO(GF_Read,i,0,tx,ty,buffR,tx,ty,GDT_Float32,0,0);
         mulPic->GetRasterBand(2)->RasterIO(GF_Read,i,0,tx,ty,buffG,tx,ty,GDT_Float32,0,0);
@@ -95,24 +89,37 @@ int main()
 	cout << "IMG  X Length:" << imgXlen << endl;
 	cout << "IMG  Y Length:" << imgYlen << endl;
 	cout << "Band Number:" << bandNum << endl;
-	int tx = 256,ty = imgYlen;
-	//开辟内存空间
+	int tx = 256,ty,choose;
+	//输出提示
+    cout << "you can choose the way to create the picture" << endl;
+    cout << "1、 divided by line" << endl;
+    cout << "2、 divided by block" << endl;
+    cin >> choose;
+    if(choose == 1){
+        ty = imgYlen;
+    }else{
+        ty = 256;
+    }
     buffR = (float *)CPLMalloc(tx * ty * sizeof(float));
     buffG = (float *)CPLMalloc(tx * ty * sizeof(float));
     buffB = (float *)CPLMalloc(tx * ty * sizeof(float));
     buffP = (float *)CPLMalloc(tx * ty * sizeof(float));
     buffH = (float *)CPLMalloc(tx * ty * sizeof(float));
     buffS = (float *)CPLMalloc(tx * ty * sizeof(float));
-    cout << "you can choose the way to create the picture" << endl;
-    cout << "1、 divided by line" << endl;
-    cout << "2、 divided by block" << endl;
-    cin >> choose;
+
     //选择处理方式
     if(choose == 1){
+        char* outPath = "Out_large1.tif";
+        outPic = GetGDALDriverManager()->GetDriverByName("GTiff")->Create(outPath,imgXlen,imgYlen,bandNum,GDT_Byte,NULL);
         dividedByLine(tx,ty,imgXlen,mulPic,panPic,outPic,buffR,buffG,buffB,buffP,buffH,buffS);
     }else if(choose == 2){
-        dividedByBlock(tx,ty,imgXlen,mulPic,panPic,outPic,buffR,buffG,buffB,buffP,buffH,buffS);
-    }
+        char* outPath = "Out_large2.tif";
+        outPic = GetGDALDriverManager()->GetDriverByName("GTiff")->Create(outPath,imgXlen,imgYlen,bandNum,GDT_Byte,NULL);
+        dividedByBlock(tx,ty,imgXlen,imgYlen,mulPic,panPic,outPic,buffR,buffG,buffB,buffP,buffH,buffS);
+    }else{
+		cout << "your input is not right!" << endl;
+		return 0;
+	}
     //释放缓存
     CPLFree(buffR);
     CPLFree(buffG);
